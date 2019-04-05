@@ -4,7 +4,9 @@ from time import sleep
 class legJoint():
     def __init__(self, gpio_pin_primary, gpio_pin_secondary,
                  orientation_primary, orientation_secondary,
-                 pause_primary, pause_secondary,
+                 forward_pwm_primary, reverse_pwm_primary,
+                 forward_pwm_secondary, reverse_pwm_secondary,
+                 pause_fwd, pause_backwd,
                  setup_pause_primary, setup_pause_secondary,
                  spiderbot_logger):
 
@@ -22,60 +24,45 @@ class legJoint():
         self.back_secondary = False
         self.neutral_secondary = False
 
-        self.pause_primary = pause_primary
-        self.pause_secondary = pause_secondary
+        self.pause_fwd = pause_fwd
+        self.pause_backwd = pause_backwd
 
         self.orientation_primary = orientation_primary
         self.orientation_secondary = orientation_secondary
 
+        self.setup_pause_primary = setup_pause_primary
+        self.setup_pause_secondary = setup_pause_secondary
+
+        self.forward_pwm_primary = forward_pwm_primary
+        self.reverse_pwm_primary = reverse_pwm_primary
+
+        self.forward_pwm_secondary = forward_pwm_secondary
+        self.reverse_pwm_secondary = reverse_pwm_secondary
+
         if self.orientation_primary == 'right':
             self.setup_pwm_primary = 1400
-            self.setup_pause_primary = setup_pause_primary
-            self.forward_pwm_primary = 1300
-            self.reverse_pwm_primary = 1700
             self.push_down_pwm_primary = None
         elif self.orientation_primary == 'left':
             self.setup_pwm_primary = 1600
-            self.setup_pause_primary = setup_pause_primary
-            self.forward_pwm_primary = 1700
-            self.reverse_pwm_primary = 1300
             self.push_down_pwm_primary = None
         elif self.orientation_primary == 'vertical_norm':
             self.setup_pwm_primary = 1400
-            self.setup_pause_primary = setup_pause_primary
-            self.forward_pwm_primary = 1300
-            self.reverse_pwm_primary = 1700
             self.push_down_pwm_primary = 1500
         elif self.orientation_primary == 'vertical_reverse':
             self.setup_pwm_primary = 1600
-            self.setup_pause_primary = setup_pause_primary
-            self.forward_pwm_primary = 1700
-            self.reverse_pwm_primary = 1300
             self.push_down_pwm_primary = 1500
 
         if self.orientation_secondary == 'right':
             self.setup_pwm_secondary = 1400
-            self.setup_pause_secondary = setup_pause_secondary
-            self.forward_pwm_secondary = 1300
-            self.reverse_pwm_secondary = 1700
             self.push_down_pwm_secondary = None
         elif self.orientation_secondary == 'left':
             self.setup_pwm_secondary = 1600
-            self.setup_pause_secondary = setup_pause_secondary
-            self.forward_pwm_secondary = 1700
-            self.reverse_pwm_secondary = 1300
             self.push_down_pwm_secondary = None
         elif self.orientation_secondary == 'vertical_norm':
             self.setup_pwm_secondary = 1400
-            self.setup_pause_secondary = setup_pause_secondary
-            self.forward_pwm_secondary = 1300
-            self.reverse_pwm_secondary = 1700
             self.push_down_pwm_secondary = 1500
         elif self.orientation_secondary == 'vertical_reverse':
             self.setup_pwm_secondary = 1600
-            self.setup_pause_secondary = setup_pause_secondary
-            self.forward_pwm_secondary = 1700
-            self.reverse_pwm_secondary = 1300
             self.push_down_pwm_secondary = 1500
 
         self.spiderbot_logger.info("Leg object created for GPIO pins: ", self.gpio_pin_primary, " and  ", self.gpio_pin_secondary)
@@ -88,15 +75,26 @@ class legJoint():
         self.servo.stop_servo(self.gpio_pin_secondary)
 
         self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
+        self.spiderbot_logger.info("reversing for {} seconds".format(self.setup_pause_primary))
         sleep(self.setup_pause_primary)
         self.servo.stop_servo(self.gpio_pin_primary)
 
         self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
+        self.spiderbot_logger.info("reversing for {} seconds".format(self.setup_pause_primary))
         sleep(self.setup_pause_secondary)
         self.servo.stop_servo(self.gpio_pin_secondary)
 
         self.neutral_primary = True
+        self.front_primary = False
+        self.back_primary = False
+
         self.neutral_secondary = True
+        self.front_secondary = False
+        self.back_secondary = False
+
+        if "vertical" in self.orientation_primary and "vertical" in self.orientation_secondary:
+            self.servo.set_servo(self.gpio_pin_primary, self.push_down_pwm_primary)
+            self.servo.set_servo(self.gpio_pin_secondary, self.push_down_pwm_secondary)
 
     def move_forward(self):
         if self.orientation_primary == 'right' or self.orientation_primary == 'left' and \
@@ -110,7 +108,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_fwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
@@ -126,7 +124,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_fwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
@@ -150,7 +148,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_fwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
@@ -180,7 +178,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_backwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
@@ -196,7 +194,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_backwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
@@ -222,7 +220,7 @@ class legJoint():
                 self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
                 self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
 
-                sleep(self.pause_primary)
+                sleep(self.pause_backwd)
                 
                 self.servo.stop_servo(self.gpio_pin_primary)
                 self.servo.stop_servo(self.gpio_pin_secondary)
