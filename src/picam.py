@@ -39,23 +39,26 @@ sys.path.append(OBJECT_DETECTION)
 from utils import label_map_util
 
 
-def detect_objects(in_queue):
+def detect_objects(in_queue, spiderbot_logger):
     """
         detect_objects() uses TensorFlow and OpenCV to determine
         what is seen in a frame from the PiCamera and will place 
         the string representation of the object in a Queue to be
         picked up by the main thread.
     """
+    spiderbot_logger.info("Starting detect_objects() function...")
 
     # Use TensorFlow utilities to map the dict file holding the labels to
     # a python style dictionary that can be used to create human readable
     # output for detected objects
+    spiderbot_logger.info("mapping labels to dictionary")
     label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
 
     # Create a TensorFlow graph to load in the frozen model and
     # make a TensorFlow session based on it
+    spiderbot_logger.info("Creating detection graph for TensorFlow")
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
@@ -69,23 +72,27 @@ def detect_objects(in_queue):
     # Create objects to hold the tensors taken from the frozen model graph.
     # These will be passed to TensorFlow to determine what it is looking
     # for and what it returns.
+    spiderbot_logger.info("Creating object tensors for TensorFlow")
     image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
     detection_scores = detection_graph.get_tensor_by_name('detection_scores:0')
     detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 
 
     # Initialize Picamera with a custom resolution and a max framerate of 10
+    spiderbot_logger.info("Initialize PiCamera")
     camera = PiCamera()
     camera.resolution = (CAM_WIDTH,CAM_HEIGHT)
     camera.framerate = 10
     
     # Create an object reference to the raw RGB values from the PiCamera
+    spiderbot_logger.info("Initialize RGB array for PiCamera")
     rawCapture = PiRGBArray(camera, size=(CAM_WIDTH,CAM_HEIGHT))
     rawCapture.truncate(0)
 
     # Create an infinite loop that will continuously take frames from the PiCamera
+    spiderbot_logger.info("Begin frame capture and object detection")
     for frame1 in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-
+        spiderbot_logger.info("get new frame and pass to TF")
         # Capture the frame as a numpy array containing the RGB values and use np.expand_dims
         # to place another axis in the 0th spot of the array
         frame = np.copy(frame1.array)
@@ -93,6 +100,7 @@ def detect_objects(in_queue):
         frame_expanded = np.expand_dims(frame, axis=0)
 
         # Run a TF session to check the current frame and output both the scores and classes arrays
+        spiderbot_logger.info("Run frame through TF model")
         (scores, classes) = sess.run([detection_scores, detection_classes], feed_dict={image_tensor: frame_expanded})
         # np.squeeze will remove all the "1" values from the scores and 
         # classes arrays as those values can essentially be treated as NULLs
@@ -100,6 +108,7 @@ def detect_objects(in_queue):
         classes = np.squeeze(classes).astype(np.int32)
         
         # Create a loop to check for the first 5 classes that were detected by TF
+        spiderbot_logger.info("Check results from TF and pass to Queue")
         for i in range(5):
             # If the score returned is greater than the minimum then get the
             # class name for that index and place it in a Queue to be sent to the

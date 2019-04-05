@@ -1,149 +1,155 @@
-from leg import legJoint
-# from picam import detect_objects
-from time import sleep
-from multiprocessing import Process, Queue
-from logging import Logger
-from getch import getch
 import sys
+from multiprocessing import Process, Queue
+from time import sleep
+from getch import getch
 
+from leg import legJoint
+from logger import Logger
+# from picam import detect_objects
 
 def main():
-    front_right_horizontal = legJoint( gpio_pin=27, orientation='right' )
-    front_right_vertical = legJoint( gpio_pin=22, orientation='vertical_norm' )
-    
-    front_left_horizontal = legJoint( gpio_pin=19, orientation='left' )
-    front_left_vertical = legJoint( gpio_pin=13, orientation='vertical_norm' )
+    # Create a stream and file logger to record data
+    spiderbot_logger = Logger('spiderbot')
+    spiderbot_logger.set_file_handler('spiderbot.log', 'INFO')
+    spiderbot_logger.set_stream_handler(sys.stdout, 'INFO')
 
-    mid_right_horizontal = legJoint( gpio_pin=17, orientation='right' )
-    mid_right_vertical = legJoint( gpio_pin=18, orientation='vertical_norm' )
+    # Create objects for each servo
+    spiderbot_logger.info("creating leg objects...")
+    front_right_horizontal = legJoint( gpio_pin_primary=27, gpio_pin_secondary=25,
+                                       orientation_primary='right', orientation_secondary='left',
+                                       pause_primary = 0.15, pause_secondary=0.12,
+                                       setup_pause_primary=0.3, setup_pause_secondary=0.23,
+                                       spiderbot_logger=spiderbot_logger )
     
-    mid_left_horizontal = legJoint( gpio_pin=26, orientation='left' )
-    mid_left_vertical = legJoint( gpio_pin=16, orientation='vertical_reverse' )
+    front_right_vertical = legJoint( gpio_pin_primary=22, gpio_pin_secondary=12,
+                                     orientation_primary='vertical_norm', orientation_secondary='vertical_norm',
+                                     pause_primary = 0.18, pause_secondary=0.18,
+                                     setup_pause_primary=0.35, setup_pause_secondary=0.35,
+                                     spiderbot_logger=spiderbot_logger )
 
-    back_right_horizontal = legJoint( gpio_pin=24, orientation='right' )
-    back_right_vertical = legJoint( gpio_pin=23, orientation='vertical_norm' )
+    front_left_horizontal = legJoint( gpio_pin_primary=19, gpio_pin_secondary=24,
+                                      orientation_primary='left', orientation_secondary='right',
+                                      pause_primary = 0.15, pause_secondary=0.15,
+                                      setup_pause_primary=0.3, setup_pause_secondary=0.3,
+                                      spiderbot_logger=spiderbot_logger )
+
+    front_left_vertical = legJoint( gpio_pin_primary=13, gpio_pin_secondary=23,
+                                    orientation_primary='vertical_norm', orientation_secondary='vertical_norm',
+                                    pause_primary = 0.18, pause_secondary=0.18,
+                                    setup_pause_primary=0.35, setup_pause_secondary=0.35,
+                                    spiderbot_logger=spiderbot_logger )
+
+    mid_right_horizontal = legJoint( gpio_pin_primary=17, gpio_pin_secondary=26,
+                                     orientation_primary='right', orientation_secondary='right',
+                                     pause_primary = 0.17, pause_secondary=0.13,
+                                     setup_pause_primary=0.34, setup_pause_secondary=0.25,
+                                     spiderbot_logger=spiderbot_logger )
+
+    mid_right_vertical = legJoint( gpio_pin_primary=18, gpio_pin_secondary=16,
+                                   orientation_primary='vertical_norm', orientation_secondary='vertical_reverse',
+                                   pause_primary = 0.18, pause_secondary=0.18,
+                                   setup_pause_primary=0.35, setup_pause_secondary=0.35,
+                                   spiderbot_logger=spiderbot_logger )
     
-    back_left_horizontal = legJoint( gpio_pin=25, orientation='left' )
-    back_left_vertical = legJoint( gpio_pin=12, orientation='vertical_norm' )
 
+    
+    spiderbot_logger.info("All leg objects created...")
+
+    # Create a Queue and thread for the Object detection process
+    # spiderbot_logger.info("Creating and staring object detection thread...")                                                  
+    # obj_detection_queue = Queue()
+    # obj_detection_thread = Process(target=detect_objects, args=(obj_detection_queue, spiderbot_logger,))
+    # obj_detection_thread.start()
+    # spiderbot_logger.info("Object detection thread created and started...")
+
+    spiderbot_logger.info("Set legs to default position...")
+    front_right_horizontal.setup()
+    front_right_vertical.setup()
+
+    front_left_horizontal.setup()
+    front_left_vertical.setup()
+
+    mid_right_horizontal.setup()
+    mid_right_vertical.setup()
+
+    front_right_horizontal.push_down()
+    front_right_vertical.push_down()
+
+    front_left_horizontal.push_down()
+    front_left_vertical.push_down()
+
+    mid_right_horizontal.push_down()
+    mid_right_vertical.push_down()
+    spiderbot_logger.info("All legs set to default position")
+
+    spiderbot_logger.info("getch thread being created")
     q = Queue()
-    put_thread = Process(target=get_key, args=(q,))
+    put_thread = Process(target=get_key, args=(q, spiderbot_logger, ))
     put_thread.start()
-
+    spiderbot_logger.info("getch thread started")
     while True:
         key = q.get()
-        print(key)
+        spiderbot_logger.info("key pressed: ", key)
         if key is None:
             pass
         elif key.lower() == 'q':
             sleep(1)
             q.put('exit')
-            print("terminated thread - press any key")
+            spiderbot_logger.info("terminated thread - press any key")
+            put_thread.join()
             break
-        elif key.lower() == 'c':
-            front_left_vertical.rotate_clockwise()
-        elif key.lower() == 'x':
-            front_right_vertical.servo.set_servo(22, 1520)
-            front_left_vertical.servo.set_servo(13, 1520)
-            mid_right_vertical.servo.set_servo(18, 1520)
-            mid_left_vertical.servo.set_servo(16, 1480)
-            back_right_vertical.servo.set_servo(23, 1520)
-            back_left_vertical.servo.set_servo(12, 1520)
-        elif key.lower() == 'v':
-            front_right_vertical.servo.set_servo(22, 1700)
-            front_left_vertical.servo.set_servo(13, 1700)
-            mid_right_vertical.servo.set_servo(18, 1700)
-            mid_left_vertical.servo.set_servo(16, 1300)
-            back_right_vertical.servo.set_servo(23, 1700)
-            back_left_vertical.servo.set_servo(12, 1700)
-        elif key.lower() == 'z':
-            front_right_vertical.servo.stop_servo(22)
-            front_left_vertical.servo.stop_servo(13)
-            mid_right_vertical.servo.stop_servo(18)
-            mid_left_vertical.servo.stop_servo(16)
-            back_right_vertical.servo.stop_servo(23)
-            back_left_vertical.servo.stop_servo(12)
+
         elif key.lower() == 'f':
-            front_left_vertical.servo.set_servo(13, 1300)
-            back_right_vertical.servo.set_servo(23, 1300)
-            sleep(0.15)
-            front_left_vertical.servo.stop_servo(13)
-            back_right_vertical.servo.stop_servo(23)
-            front_left_horizontal.servo.set_servo(19, 1700)
-            back_right_horizontal.servo.set_servo(24, 1300)
-            sleep(0.15)
-            front_left_horizontal.servo.stop_servo(19)
-            back_left_horizontal.servo.stop_servo(24)
-            front_left_vertical.servo.set_servo(13, 1700)
-            back_right_vertical.servo.set_servo(23, 1700)
-            sleep(0.15)
-            front_left_vertical.servo.set_servo(13, 1520)
-            back_right_vertical.servo.set_servo(23, 1520)
-        elif key.lower() == 'g':
             front_left_vertical.move_forward()
-            back_right_vertical.move_forward()
-
             front_left_horizontal.move_forward()
-            back_right_horizontal.move_forward()
-
             front_left_vertical.move_backward()
-            back_right_vertical.move_backward()
 
-            front_left_vertical.push_down()
-            back_right_vertical.push_down()            
+        elif key.lower() == 'p':
+            pass
 
+        elif key.lower() == 'w':
+            pass
+            
+        elif key.lower() == 'e':
+            pass
 
+        elif key.lower() == 'r':
+            pass
 
+        elif key.lower() == 't':
+            pass
 
-    #         objects = q.get()
-    #         print(objects)
-    #         # for obj in objects:
-    #         #     if obj == "person":
-    #         #         move_forward( front_right_horizontal, front_right_vertical, 'right')
-    #         #         sleep(0.1)
-    #         #         front_right_horizontal.center_joint()
-    #         #         sleep(0.1)
+        elif key.lower() == 'y':
+            pass
 
-    #         #     # for _ in range(5):
-    #         #     #     move_forward( front_left_horizontal, front_left_vertical, 'left')
-    #         #     #     sleep(0.1)
-    #         #     #     front_left_horizontal.center_joint()
-    #         #     #     sleep(0.1)
+        elif key.lower() == 'u':
+            pass
+
+    front_right_horizontal.close()
+    front_right_vertical.close()
+
+    front_left_horizontal.close()
+    front_left_vertical.close()
+
+    mid_right_horizontal.close()
+    mid_right_vertical.close()       
 
     exit(0)
 
-def get_key(q):
+def get_key(q, spiderbot_logger):
     while True:
         try:
             response = q.get(block=False)
-            print(response)
+            spiderbot_logger.info(response)
             if  response == 'exit':
                 break
         except:
             pass
         key = getch()
         q.put(key)
-        print("put key in queue")
+        spiderbot_logger.info("put key in queue")
         sleep(1)
-    
-def  move_forward( joint1, joint2, orientation):
-    
-    if orientation == 'right':
-        joint2.rotate_counter_clockwise()
-        sleep(0.1)
-        joint1.rotate_counter_clockwise()
-        sleep(0.1)
-        joint2.center_joint()
-    elif orientation == 'left':
-        joint2.rotate_clockwise()
-        sleep(0.1)
-        joint1.rotate_counter_clockwise()
-        sleep(0.1)
-        joint2.center_joint()
-    else:
-        raise ValueError 
-    
-    return
+
   
 if __name__ == "__main__":
     main()
