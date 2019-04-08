@@ -54,7 +54,7 @@ def main():
                                      forward_pwm_primary=1440, reverse_pwm_primary=1610,
                                      forward_pwm_secondary=1570, reverse_pwm_secondary=1430,
                                      pause_fwd=0.18, pause_backwd=0.18,
-                                     setup_pause_primary=0.4, setup_pause_secondary=0.43,
+                                     setup_pause_primary=0.3, setup_pause_secondary=0.38,
                                      spiderbot_logger=spiderbot_logger )
 
     mid_right_vertical = legJoint( gpio_pin_primary=18, gpio_pin_secondary=16,
@@ -75,13 +75,13 @@ def main():
     # spiderbot_logger.info("Object detection thread created and started...")
 
     spiderbot_logger.info("Set legs to default position...")
-    # front_right_vertical.setup()
-    # front_right_horizontal.setup()
+    front_right_vertical.setup()
+    front_right_horizontal.setup()
 
-    # front_left_vertical.setup()
-    # front_left_horizontal.setup()
+    front_left_vertical.setup()
+    front_left_horizontal.setup()
 
-    # mid_right_vertical.setup()
+    mid_right_vertical.setup()
     mid_right_horizontal.setup()
     spiderbot_logger.info("All legs set to default position")
 
@@ -103,13 +103,13 @@ def main():
             break
 
         elif key.lower() == 's':
-            # front_right_vertical.setup()
-            # front_right_horizontal.setup()
+            front_right_vertical.setup()
+            front_right_horizontal.setup()
 
-            # front_left_vertical.setup()
-            # front_left_horizontal.setup()
+            front_left_vertical.setup()
+            front_left_horizontal.setup()
 
-            # mid_right_vertical.setup()
+            mid_right_vertical.setup()
             mid_right_horizontal.setup()
 
         elif key.lower() == 'x':
