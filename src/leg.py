@@ -114,16 +114,16 @@ class legJoint():
         elif direction == 'rotate_bckwd':
             pause = self.pause_backwd
             pwm_primary = self.reverse_pwm_primary
-            pwm_secondar = self.forward_pwm_primary
+            pwm_secondary = self.forward_pwm_secondary
         else:
             self.spiderbot_logger.error("Invalid direction for movement options.")
             exit(1)
 
         if self.front_primary and self.front_secondary:
-            if (direction == 'forward' or direction == 'rotate_fwd'):
-                self.spiderbot_logger.info("Legs are already in the forward position and cannot move forward again.")
+            if (direction == 'forward' or 'rotate' in direction):
+                self.spiderbot_logger.warning("Legs are already in the forward position and cannot move forward again.")
                 return
-            elif (direction == 'backward' or direction == 'rotate_bckwd'):
+            elif direction == 'backward':
                 self.neutral_primary = True
                 self.front_primary = False
 
@@ -131,30 +131,62 @@ class legJoint():
                 self.front_secondary = False
 
         elif self.neutral_primary and self.neutral_secondary:
-            if (direction == 'forward' or direction == 'rotate_fwd'):
+            if direction == 'forward':
                 self.neutral_primary = False
                 self.front_primary = True
 
                 self.neutral_secondary = False
                 self.front_secondary = True
-            elif (direction == 'backward' or direction == 'rotate_bckwd'):
+            elif direction == 'backward':
                 self.neutral_primary = False
                 self.back_primary = True
 
                 self.neutral_secondary = False
-                self.back_secondary = True 
+                self.back_secondary = True
+            elif direction == 'rotate_fwd':
+                self.neutral_primary = False
+                self.front_primary = True
+
+                self.neutral_secondary = False
+                self.back_secondary = True
+            elif direction == 'rotate_bckwd':
+                self.neutral_primary = False
+                self.back_primary = True
+
+                self.neutral_secondary = False
+                self.front_secondary = True
 
         elif self.back_primary and self.back_secondary:
-            if (direction == 'forward' or direction == 'rotate_fwd'):
+            if (direction == 'forward'):
                 self.neutral_primary = True
                 self.back_primary = False
 
                 self.neutral_secondary = True
                 self.back_secondary = False
-            elif (direction == 'backward' or direction == 'rotate_bckwd'):
-                self.spiderbot_logger.info("Legs are already in the reverse position and cannot move backwards again.")
+            elif (direction == 'backward' or 'rotate' in direction):
+                self.spiderbot_logger.warning("Legs are already in the reverse position and cannot move backwards again.")
                 return
 
+        elif self.back_primary and self.front_secondary:
+            if direction == 'rotate_fwd':
+                self.neutral_primary = True
+                self.back_primary = False
+
+                self.neutral_secondary = True
+                self.front_secondary = False
+            else:
+                self.spiderbot_logger.warning("Legs can only be rotated forward when in the current configuration")
+        
+        elif self.front_primary and self.back_secondary:
+            if direction == 'rotate_bckwd':
+                self.neutral_primary = True
+                self.front_primary = False
+
+                self.neutral_secondary = True
+                self.back_secondary = False
+            else:
+                self.spiderbot_logger.warning("Legs can only be rotated forward when in the current configuration")
+        
         self.servo.set_servo(self.gpio_pin_primary, pwm_primary)
         self.servo.set_servo(self.gpio_pin_secondary, pwm_secondary)
 

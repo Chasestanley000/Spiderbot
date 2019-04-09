@@ -39,7 +39,7 @@ sys.path.append(OBJECT_DETECTION)
 from object_detection.utils import label_map_util
 
 
-def detect_objects(in_queue, spiderbot_logger):
+def detect_objects(in_queue, out_queue, spiderbot_logger):
     """
         detect_objects() uses TensorFlow and OpenCV to determine
         what is seen in a frame from the PiCamera and will place 
@@ -91,7 +91,16 @@ def detect_objects(in_queue, spiderbot_logger):
 
     # Create an infinite loop that will continuously take frames from the PiCamera
     spiderbot_logger.info("Begin frame capture and object detection")
+    out_queue.put('ready')
     for frame1 in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        try:
+            flag = in_queue.get(block=False)
+        except:
+            flag = None
+
+        if flag is not None:
+            break
+            
         spiderbot_logger.info("get new frame and pass to TF")
         # Capture the frame as a numpy array containing the RGB values and use np.expand_dims
         # to place another axis in the 0th spot of the array
@@ -116,7 +125,7 @@ def detect_objects(in_queue, spiderbot_logger):
             if scores is None or scores[i] > MIN_SCORE:
                 if classes[i] in category_index.keys():
                     class_name = category_index[classes[i]]['name']
-                    in_queue.put(str(class_name))
+                    out_queue.put(str(class_name))
 
         # reset capture back to 0 to get a fresh frame
         rawCapture.truncate(0)

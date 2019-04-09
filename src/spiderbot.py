@@ -70,7 +70,8 @@ def main():
     # Create a Queue and thread for the Object detection process
     spiderbot_logger.info("Creating and staring object detection thread...")                                                  
     obj_detection_queue = Queue()
-    obj_detection_thread = Process(target=detect_objects, args=(obj_detection_queue, spiderbot_logger,))
+    flag_queue = Queue()
+    obj_detection_thread = Process(target=detect_objects, args=(flag_queue, obj_detection_queue, spiderbot_logger,))
     obj_detection_thread.start()
     spiderbot_logger.info("Object detection thread created and started...")
 
@@ -87,7 +88,14 @@ def main():
     spiderbot_logger.info("All legs set to default position")
 
     turn_count = 0
-    
+    while True:
+        try:
+            start_flag = obj_detection_queue.get(block=False)
+        except:
+            start_flag = None
+        if start_flag is not None:
+            break
+
     while True:
         sleep(1)
         try:
@@ -97,97 +105,33 @@ def main():
             detected_object = None
 
         if detected_object is None:
-            spiderbot_logger.info("Turn count is currently: ", turn_count)
-            # if turn_count % 8 == 0:
-            #     front_left_vertical.move_forward()
-            #     front_left_horizontal.rotate_forward()
-            #     front_left_vertical.move_backward()
-            #     front_left_vertical.push_down()
-
-            #     mid_right_vertical.move_forward()
-            #     mid_right_horizontal.rotate_forward()
-            #     mid_right_vertical.move_backward()
-            #     mid_right_vertical.push_down()
-
-            #     front_right_vertical.move_forward()
-            #     front_left_horizontal.rotate_forward()
-            #     mid_right_horizontal.move_backward()
-            #     front_right_vertical.move_backward()
-            #     front_right_vertical.push_down()
-
-            if turn_count % 2 == 0:
-                front_left_vertical.move_forward()
-                front_left_horizontal.move_forward()
-                front_left_vertical.move_backward()
-                front_left_vertical.push_down()
-
-                mid_right_vertical.move_forward()
-                mid_right_horizontal.move_forward()
-                mid_right_vertical.move_backward()
-                mid_right_vertical.push_down()
-
-                front_right_vertical.move_forward()
-                front_left_horizontal.move_backward()
-                mid_right_horizontal.move_backward()
-                front_right_vertical.move_backward()
-                front_right_vertical.push_down()
-                
+            spiderbot_logger.info("turn count = ", turn_count)
+            spiderbot_logger.info("turn cound % 16 = ", turn_count % 16)
+            if turn_count % 16 == 0:
+                for _ in range(10):
+                    forward_movement_tech( primary_vertical=front_left_vertical, primary_horizontal=front_left_horizontal,
+                                        secondary_vertical=front_right_vertical, secondary_horizontal=front_right_horizontal,
+                                        tertiary_vertical=mid_right_vertical, tertiary_horizontal=mid_right_horizontal )
+                    
+                    forward_movement_tech( primary_vertical=front_right_vertical, primary_horizontal=front_right_horizontal,
+                                        secondary_vertical=front_left_vertical, secondary_horizontal=front_left_horizontal,
+                                        tertiary_vertical=mid_right_vertical, tertiary_horizontal=mid_right_horizontal )
+            
             else:
-                front_right_vertical.move_forward()
-                front_right_horizontal.move_forward()
-                front_right_vertical.move_backward()
-                front_right_vertical.push_down()
-
-                mid_right_vertical.move_forward()
-                mid_right_horizontal.move_forward()
-                mid_right_vertical.move_backward()
-                mid_right_vertical.push_down()
-
-                front_left_vertical.move_forward()
-                front_right_horizontal.move_backward()
-                mid_right_horizontal.move_backward()
-                front_left_vertical.move_backward()
-                front_right_vertical.push_down()
+                rotate_movement_tech( primary_vertical=front_left_vertical, primary_horizontal=front_left_horizontal,
+                                        secondary_vertical=front_right_vertical, secondary_horizontal=front_right_horizontal,
+                                        tertiary_vertical=mid_right_vertical, tertiary_horizontal=mid_right_horizontal )
             
             turn_count += 1
 
         elif detected_object == 'person':
-            turn_count = 0
-            while turn_count < 10:
-                if turn_count % 2 == 0:
-                    front_left_vertical.move_forward()
-                    front_left_horizontal.move_forward()
-                    front_left_vertical.move_backward()
-                    front_left_vertical.push_down()
-
-                    mid_right_vertical.move_forward()
-                    mid_right_horizontal.move_forward()
-                    mid_right_vertical.move_backward()
-                    mid_right_vertical.push_down()
-
-                    front_right_vertical.move_forward()
-                    front_left_horizontal.move_backward()
-                    mid_right_horizontal.move_backward()
-                    front_right_vertical.move_backward()
-                    front_right_vertical.push_down()
-                else:
-                    front_left_vertical.move_forward()
-                    front_left_horizontal.move_forward()
-                    front_left_vertical.move_backward()
-                    front_left_vertical.push_down()
-
-                    mid_right_vertical.move_forward()
-                    mid_right_horizontal.move_forward()
-                    mid_right_vertical.move_backward()
-                    mid_right_vertical.push_down()
-
-                    front_right_vertical.move_forward()
-                    front_left_horizontal.move_backward()
-                    mid_right_horizontal.move_backward()
-                    front_right_vertical.move_backward()
-                    front_right_vertical.push_down()
-                turn_count += 1
+            spiderbot_logger.info("Detected person")
+            for _ in range(3):
+                mid_right_vertical.move_forward()
+                mid_right_vertical.move_backward()
             break
+
+    flag_queue.put('break')
 
     front_right_horizontal.close()
     front_right_vertical.close()
@@ -200,20 +144,50 @@ def main():
 
     exit(0)
 
-def get_key(q, spiderbot_logger):
-    while True:
-        try:
-            response = q.get(block=False)
-            spiderbot_logger.info(response)
-            if  response == 'exit':
-                break
-        except:
-            pass
-        key = getch()
-        q.put(key)
-        spiderbot_logger.info("put key in queue")
-        sleep(1)
 
-  
+def forward_movement_tech(primary_vertical, primary_horizontal,
+                          secondary_vertical, secondary_horizontal,
+                          tertiary_vertical, tertiary_horizontal):
+
+    primary_vertical.move_forward()
+    primary_horizontal.move_forward()
+    primary_vertical.move_backward()
+    primary_vertical.push_down()
+
+    tertiary_vertical.move_forward()
+    tertiary_horizontal.move_forward()
+    tertiary_vertical.move_backward()
+    tertiary_vertical.push_down()
+
+    secondary_vertical.move_forward()
+    primary_horizontal.move_backward()
+    tertiary_horizontal.move_backward()
+    secondary_vertical.move_backward()
+    primary_vertical.push_down()
+
+
+def rotate_movement_tech(primary_vertical, primary_horizontal,
+                         secondary_vertical, secondary_horizontal,
+                         tertiary_vertical, tertiary_horizontal):
+
+    primary_vertical.move_forward()
+    primary_horizontal.rotate_forward()
+    primary_vertical.move_backward()
+    primary_vertical.push_down()
+
+    secondary_vertical.move_forward()
+    secondary_horizontal.rotate_backward()
+    secondary_vertical.move_backward()
+    secondary_vertical.push_down()
+
+    tertiary_vertical.move_forward()
+    tertiary_horizontal.rotate_backward()
+    tertiary_vertical.move_backward()
+    tertiary_vertical.push_down()
+
+    primary_horizontal.rotate_backward()
+    secondary_horizontal.rotate_forward()
+    tertiary_horizontal.rotate_forward()
+
 if __name__ == "__main__":
     main()
