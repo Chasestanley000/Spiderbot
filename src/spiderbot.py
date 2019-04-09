@@ -88,6 +88,7 @@ def main():
     spiderbot_logger.info("All legs set to default position")
 
     turn_count = 0
+    # wait until object detection drops into getting and analyzing frames before starting movement
     while True:
         try:
             start_flag = obj_detection_queue.get(block=False)
@@ -96,14 +97,19 @@ def main():
         if start_flag is not None:
             break
 
+    # drop into the main movement loop
     while True:
         sleep(1)
+        # attempt to get an object from the queue
+        # if no object is found set the detected object to None and proceed
         try:
             detected_object = obj_detection_queue.get(block=False)
         except:
             spiderbot_logger.info("No object detected")
             detected_object = None
 
+        # if no object is pulled from the queue either rotate the robot;
+        # or, if 16 rotations have occured move forward 8 steps
         if detected_object is None:
             if turn_count % 16 == 0:
                 for _ in range(8):
@@ -122,6 +128,7 @@ def main():
             
             turn_count += 1
 
+        # if a person was detected flap the middle legs 3 times and break the object detection loop
         elif detected_object == 'person':
             spiderbot_logger.info("Detected person")
             for _ in range(3):
@@ -129,6 +136,8 @@ def main():
                 mid_right_vertical.move_backward()
             break
 
+    # send a signal to the object detection thread to close
+    # then close all servo objects before exiting the program
     flag_queue.put('break')
 
     front_right_horizontal.close()

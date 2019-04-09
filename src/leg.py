@@ -39,6 +39,7 @@ class legJoint():
         self.forward_pwm_secondary = forward_pwm_secondary
         self.reverse_pwm_secondary = reverse_pwm_secondary
 
+        # bassed on orientation of the servos the forward and reverse pwms must be set differently
         if self.orientation_primary == 'right':
             self.setup_pwm_primary = 1400
             self.push_down_pwm_primary = None
@@ -68,6 +69,9 @@ class legJoint():
         self.spiderbot_logger.info("Leg object created for GPIO pins: ", self.gpio_pin_primary, " and  ", self.gpio_pin_secondary)
     
     def setup(self):
+        """
+        A basic setup function to place all legs in a neutral position
+        """
         self.servo.set_servo(self.gpio_pin_primary, self.setup_pwm_primary)
         self.servo.set_servo(self.gpio_pin_secondary, self.setup_pwm_secondary)
         sleep(1)
@@ -93,11 +97,17 @@ class legJoint():
         self.front_secondary = False
         self.back_secondary = False
 
+        # if the leg object is in a vertical position then apply a "push down" pulse width to it
         if "vertical" in self.orientation_primary and "vertical" in self.orientation_secondary:
             self.servo.set_servo(self.gpio_pin_primary, self.push_down_pwm_primary)
             self.servo.set_servo(self.gpio_pin_secondary, self.push_down_pwm_secondary)
 
     def __movement(self, direction):
+        """
+        A private movement script that can only be called from within the object
+        by giving it a direction it can decide which servos get which pwm, their next position,
+        and whether the next state will be a legal state or not
+        """
         self.spiderbot_logger.info("Moving {} for GPIO pins {} and {}".format(direction, self.gpio_pin_primary, self.gpio_pin_secondary))
         if direction == 'forward':
             pause = self.pause_fwd
