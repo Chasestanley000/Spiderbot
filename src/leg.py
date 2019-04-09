@@ -72,6 +72,7 @@ class legJoint():
         self.servo.set_servo(self.gpio_pin_secondary, self.setup_pwm_secondary)
         sleep(1)
         self.servo.stop_servo(self.gpio_pin_primary)
+        if(self.gpio_pin_secondary == 26): sleep(0.2)
         self.servo.stop_servo(self.gpio_pin_secondary)
 
         self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
@@ -96,171 +97,83 @@ class legJoint():
             self.servo.set_servo(self.gpio_pin_primary, self.push_down_pwm_primary)
             self.servo.set_servo(self.gpio_pin_secondary, self.push_down_pwm_secondary)
 
-    def move_forward(self):
-        if self.orientation_primary == 'right' or self.orientation_primary == 'left' and \
-           self.orientation_secondary == 'right' or self.orientation_secondary == 'left':
-            
-            if self.front_primary and self.front_secondary:
-                self.spiderbot_logger.info("Legs are already in the forward position and cannot move forwrd again.")
-                pass
-            elif self.neutral_primary and self.neutral_secondary:
-
-                self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
-
-                sleep(self.pause_fwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
-                self.neutral_primary = False
-                self.front_primary = True
-
-                self.neutral_secondary = False
-                self.front_secondary = True
-
-            elif self.back_primary and self.back_secondary:
-
-                self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
-
-                sleep(self.pause_fwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
-                self.back_primary = False
-                self.neutral_primary = True
-
-                self.back_secondary = False
-                self.neutral_secondary = True
-            else:
-                self.spiderbot_logger.error("Positions of leg pair are in an illegal state.")
-
-        elif self.orientation_primary == 'vertical_norm' or self.orientation_primary == 'vertical_revers' and \
-             self.orientation_secondary == 'vertical_norm' or self.orientation_secondary == 'vertical_revers':
-
-            if self.front_primary and self.front_secondary:
-                self.spiderbot_logger.info("Legs are already in the forward position and cannot move forwrd again.")
-                pass
-            elif self.neutral_primary and self.neutral_secondary:
-
-                self.servo.set_servo(self.gpio_pin_primary, self.forward_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.forward_pwm_secondary)
-
-                sleep(self.pause_fwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
-                self.neutral_primary = False
-                self.front_primary = True
-
-                self.neutral_secondary = False
-                self.front_secondary = True
-
-            elif self.back_primary and self.back_secondary:
-                self.spiderbot_logger.info("The 'back' position is an illegal state for vertical legs.")
-                pass
-            else:
-                self.spiderbot_logger.error("Positions of leg pair are in an illegal state.")
-        
+    def __movement(self, direction):
+        self.spiderbot_logger.info("Moving {} for GPIO pins {} and {}".format(direction, self.gpio_pin_primary, self.gpio_pin_secondary))
+        if direction == 'forward':
+            pause = self.pause_fwd
+            pwm_primary = self.forward_pwm_primary
+            pwm_secondary = self.forward_pwm_secondary
+        elif direction == 'backward':
+            pause = self.pause_backwd
+            pwm_primary = self.reverse_pwm_primary
+            pwm_secondary = self.reverse_pwm_secondary
+        elif direction == 'rotate_fwd':
+            pause = self.pause_fwd
+            pwm_primary = self.forward_pwm_primary
+            pwm_secondary = self.reverse_pwm_secondary
+        elif direction == 'rotate_bckwd':
+            pause = self.pause_backwd
+            pwm_primary = self.reverse_pwm_primary
+            pwm_secondar = self.forward_pwm_primary
         else:
-            self.spiderbot_logger.error("The orientions of the leg pair are in an illegal combination.")
+            self.spiderbot_logger.error("Invalid direction for movement options.")
+            exit(1)
 
-
-    def move_backward(self):
-        if self.orientation_primary == 'right' or self.orientation_primary == 'left' and \
-           self.orientation_secondary == 'right' or self.orientation_secondary == 'left':
-            
-            if self.front_primary and self.front_secondary:
-    
-                self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
-
-                sleep(self.pause_backwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
-                self.front_primary = False
+        if self.front_primary and self.front_secondary:
+            if (direction == 'forward' or direction == 'rotate_fwd'):
+                self.spiderbot_logger.info("Legs are already in the forward position and cannot move forward again.")
+                return
+            elif (direction == 'backward' or direction == 'rotate_bckwd'):
                 self.neutral_primary = True
+                self.front_primary = False
 
-                self.front_secondary = False
                 self.neutral_secondary = True
+                self.front_secondary = False
 
-            elif self.neutral_primary and self.neutral_secondary:
+        elif self.neutral_primary and self.neutral_secondary:
+            if (direction == 'forward' or direction == 'rotate_fwd'):
+                self.neutral_primary = False
+                self.front_primary = True
 
-                self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
-
-                sleep(self.pause_backwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
+                self.neutral_secondary = False
+                self.front_secondary = True
+            elif (direction == 'backward' or direction == 'rotate_bckwd'):
                 self.neutral_primary = False
                 self.back_primary = True
 
                 self.neutral_secondary = False
-                self.back_secondary = True
+                self.back_secondary = True 
 
-            elif self.back_primary and self.back_secondary:
-                self.spiderbot_logger.info("Legs are already in the rear position and cannot move forwrd again.")
-                pass
-                
-            else:
-                self.spiderbot_logger.error("Positions of leg pair are in an illegal state.")
-
-        elif self.orientation_primary == 'vertical_norm' or self.orientation_primary == 'vertical_revers' and \
-             self.orientation_secondary == 'vertical_norm' or self.orientation_secondary == 'vertical_revers':
-
-            if self.front_primary and self.front_secondary:
-                
-                self.servo.set_servo(self.gpio_pin_primary, self.reverse_pwm_primary)
-                self.servo.set_servo(self.gpio_pin_secondary, self.reverse_pwm_secondary)
-
-                sleep(self.pause_backwd)
-                
-                self.servo.stop_servo(self.gpio_pin_primary)
-                self.servo.stop_servo(self.gpio_pin_secondary)
-                
-                self.front_primary = False
+        elif self.back_primary and self.back_secondary:
+            if (direction == 'forward' or direction == 'rotate_fwd'):
                 self.neutral_primary = True
+                self.back_primary = False
 
-                self.front_secondary = False
                 self.neutral_secondary = True
+                self.back_secondary = False
+            elif (direction == 'backward' or direction == 'rotate_bckwd'):
+                self.spiderbot_logger.info("Legs are already in the reverse position and cannot move backwards again.")
+                return
 
-            elif self.neutral_primary and self.neutral_secondary:
-                self.spiderbot_logger.info("Legs are already in the forward position and cannot move forwrd again.")
-                pass
-                
-            elif self.back_primary and self.back_secondary:
-                self.spiderbot_logger.info("The 'back' position is an illegal state for vertical legs.")
-                pass
+        self.servo.set_servo(self.gpio_pin_primary, pwm_primary)
+        self.servo.set_servo(self.gpio_pin_secondary, pwm_secondary)
 
-            else:
-                self.spiderbot_logger.error("Positions of leg pair are in an illegal state.")
+        sleep(pause)
         
-        else:
-            self.spiderbot_logger.error("The orientions of the leg pair are in an illegal combination.")
+        self.servo.stop_servo(self.gpio_pin_primary)
+        self.servo.stop_servo(self.gpio_pin_secondary)
 
+    def move_forward(self):
+        self.__movement(direction='forward')
 
-    # def center_joint(self):
-    #     if self.lower_limit == True:
-    #         self.servo.set_servo(self.gpio_pin, self.forward_pwm)
-    #         sleep(self.half_rotation)
-    #         self.servo.stop_servo(self.gpio_pin)
-    #         self.lower_limit = False
-    #         self.neutral = True
-    #     elif self.upper_limit == True:
-    #         self.servo.set_servo(self.gpio_pin, self.reverse_pwm)
-    #         sleep(self.half_rotation)
-    #         self.servo.stop_servo(self.gpio_pin)
-    #         self.upper_limit = False
-    #         self.neutral = True
-    #     else:
-    #         pass
+    def move_backward(self):
+        self.__movement(direction='backward')
+
+    def rotate_forward(self):
+        self.__movement(direction='rotate_fwd')
+        
+    def rotate_backward(self):
+        self.__movement(direction='rotate_bckwd')
 
     def push_down(self):
         if self.push_down_pwm_primary is not None and self.push_down_pwm_secondary is not None:

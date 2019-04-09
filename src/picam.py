@@ -23,10 +23,10 @@ CAM_HEIGHT = 480
 # PATH_TO_LABELS - path to a dictionary style file holding the labels/values of objects the model can detect
 # NUM_CLASSES - Number of classes the object detector can identify
 # MIN_SCORE - The minimum value that will determine whether TensorFlow "sees" an object or not, 0.5 = 50% 
-OBJECT_DETECTION = '/home/pi/tensorflow1/models/research/object_detection'
+OBJECT_DETECTION = '/home/pi/tensorflow1/models/research'
 MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09'
-PATH_TO_CKPT = os.path.join(OBJECT_DETECTION, MODEL_NAME,'frozen_inference_graph.pb')
-PATH_TO_LABELS = os.path.join(OBJECT_DETECTION, 'data','mscoco_label_map.pbtxt')
+PATH_TO_CKPT = os.path.join(OBJECT_DETECTION, 'object_detection', MODEL_NAME,'frozen_inference_graph.pb')
+PATH_TO_LABELS = os.path.join(OBJECT_DETECTION, 'object_detection', 'data','mscoco_label_map.pbtxt')
 NUM_CLASSES = 90
 MIN_SCORE = .5
 
@@ -36,7 +36,7 @@ MIN_SCORE = .5
 sys.path.append(OBJECT_DETECTION)
 
 # Import utilites
-from utils import label_map_util
+from object_detection.utils import label_map_util
 
 
 def detect_objects(in_queue, spiderbot_logger):
@@ -113,7 +113,7 @@ def detect_objects(in_queue, spiderbot_logger):
             # If the score returned is greater than the minimum then get the
             # class name for that index and place it in a Queue to be sent to the
             # main thread
-            if scores is None or scores[i] > min_score_thresh:
+            if scores is None or scores[i] > MIN_SCORE:
                 if classes[i] in category_index.keys():
                     class_name = category_index[classes[i]]['name']
                     in_queue.put(str(class_name))
