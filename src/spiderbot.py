@@ -105,10 +105,8 @@ def main():
             detected_object = None
 
         if detected_object is None:
-            spiderbot_logger.info("turn count = ", turn_count)
-            spiderbot_logger.info("turn cound % 16 = ", turn_count % 16)
             if turn_count % 16 == 0:
-                for _ in range(10):
+                for _ in range(8):
                     forward_movement_tech( primary_vertical=front_left_vertical, primary_horizontal=front_left_horizontal,
                                         secondary_vertical=front_right_vertical, secondary_horizontal=front_right_horizontal,
                                         tertiary_vertical=mid_right_vertical, tertiary_horizontal=mid_right_horizontal )
